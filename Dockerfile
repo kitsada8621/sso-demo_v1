@@ -8,8 +8,8 @@ COPY go.mod go.sum ./
 
 RUN go mod download
 
-COPY . .
+COPY . /app
 
-RUN go build -o main .
+RUN go build -o main ./cmd/api
 
 CMD ["./main"]
