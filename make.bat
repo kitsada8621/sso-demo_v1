@@ -1,45 +1,57 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM Default environment is development
+REM ------------------------------------------------------------------
+REM make.bat - A helper script for managing the Go application and Docker containers.
+REM Default environment is set to development if not specified.
+REM ------------------------------------------------------------------
 if "%ENV%"=="" set ENV=development
 
-REM Color codes for Windows console
-set GREEN=92
-set YELLOW=93
-set WHITE=97
-set RESET=0
+REM Color codes for Windows console output
+set "GREEN=92"
+set "YELLOW=93"
+set "WHITE=97"
+set "RESET=0"
 
-REM Check if a command was provided
-if "%1"=="" goto :help
+REM If no command-line argument is provided, show help
+if "%~1"=="" goto :help
 
-REM Jump to the specified command
-goto :%1
+REM Attempt to jump to the specified command label.
+REM If the label does not exist, fall through to help.
+goto :%~1
 if ERRORLEVEL 1 goto :help
 
+REM ------------------------------------------------------------------
 :help
+REM Display help text with available commands and descriptions.
 echo.
 echo Usage:
-call :colorEcho %YELLOW% "  make.bat" %RESET% " " %GREEN% "^<target^>" %RESET%
+call :colorEcho %YELLOW% "  make.bat" %RESET% " " %GREEN% "<target>" %RESET%
 echo.
-echo Targets:
-call :colorEcho %GREEN% "  run           - Run the Go application with interactive environment selection"
-call :colorEcho %GREEN% "  run-direct    - Run directly with ENV variable"
-call :colorEcho %GREEN% "  build         - Build the Go application"
-call :colorEcho %GREEN% "  docker-start  - Start Docker containers"
-call :colorEcho %GREEN% "  docker        - Choose a Docker command (Keycloak or Kong)"
-call :colorEcho %GREEN% "  clean         - Remove binary files"
-call :colorEcho %GREEN% "  help          - Show this help message"
+echo Available Targets:
+call :colorEcho %GREEN% "  run           - Run the Go application with interactive environment selection" 
+call :colorEcho %GREEN% "  run-direct    - Run the Go application using the ENV variable directly" 
+call :colorEcho %GREEN% "  build         - Build the Go application binary" 
+call :colorEcho %GREEN% "  docker-start  - Start all Docker containers (builds and runs)" 
+call :colorEcho %GREEN% "  docker-up     - Start a specific Docker container (Keycloak or Kong)" 
+call :colorEcho %GREEN% "  docker-down   - Stop a specific Docker container (Keycloak or Kong)" 
+call :colorEcho %GREEN% "  docker-log    - View logs for a specific Docker container (Keycloak or Kong)" 
+call :colorEcho %GREEN% "  clean         - Remove build files and clean environment" 
+call :colorEcho %GREEN% "  help          - Display this help message" 
 echo.
 goto :eof
 
+REM ------------------------------------------------------------------
 :docker-start
+REM Stop any running containers (to clear orphan containers), then start them up.
 echo Starting Docker containers...
 docker-compose down --remove-orphans
 docker-compose up -d --build
 goto :eof
 
+REM ------------------------------------------------------------------
 :run
+REM Prompt the user to select an environment and run accordingly.
 call :colorEcho %YELLOW% "Please select environment:" %RESET%
 echo.
 echo 1) Development
@@ -48,36 +60,42 @@ echo 3) Docker
 set /p choice="Enter choice [1-3]: "
 
 if "%choice%"=="1" (
-  set ENV=development
+  set "ENV=development"
   goto :run-direct
 ) else if "%choice%"=="2" (
-  set ENV=production
+  set "ENV=production"
   goto :run-direct
 ) else if "%choice%"=="3" (
-  set ENV=docker
+  set "ENV=docker"
   goto :run-docker
 ) else (
-  call :colorEcho %YELLOW% "Invalid choice. Using default (development)" %RESET%
+  call :colorEcho %YELLOW% "Invalid choice. Defaulting to development." %RESET%
   echo.
-  set ENV=development
+  set "ENV=development"
   goto :run-direct
 )
 
+REM ------------------------------------------------------------------
 :run-direct
+REM Run the Go application using the current ENV variable.
 call :colorEcho %GREEN% "Running application in %ENV% environment..." %RESET%
 echo.
 go run ./cmd/api/main.go
 goto :eof
 
+REM ------------------------------------------------------------------
 :run-docker
+REM Stop orphan containers then run the application via docker-compose.
 call :colorEcho %GREEN% "Running application in Docker environment..." %RESET%
 echo.
 docker-compose down --remove-orphans
 docker-compose up --build -d
 goto :eof
 
-:docker
-echo Choose a Docker command:
+REM ------------------------------------------------------------------
+:docker-up
+REM Let the user choose which Docker container to start.
+echo Choose a Docker container to start:
 echo 1) Keycloak
 echo 2) Kong
 set /p choice="Enter choice [1-2]: "
@@ -86,36 +104,88 @@ if "%choice%"=="1" (
 ) else if "%choice%"=="2" (
   goto :kong
 ) else (
-  call :colorEcho %YELLOW% "Invalid choice" %RESET%
+  call :colorEcho %YELLOW% "Invalid choice. Exiting docker-up." %RESET%
   goto :eof
 )
 
+REM ------------------------------------------------------------------
+:docker-down
+REM Let the user choose which Docker container to stop.
+echo Stopping Docker container:
+echo 1) Keycloak
+echo 2) Kong
+set /p choice="Enter choice [1-2]: "
+if "%choice%"=="1" (
+  docker-compose -f docker-compose.keycloak.yml down
+  REM Uncomment the line below to remove the Keycloak image if needed:
+  REM docker rmi -f quay.io/keycloak/keycloak:26.1.3
+  goto :eof
+) else if "%choice%"=="2" (
+  docker-compose -f docker-compose.kong.yml down
+  goto :eof
+) else (
+  call :colorEcho %YELLOW% "Invalid choice. Exiting docker-down." %RESET%
+  goto :eof
+)
+
+REM ------------------------------------------------------------------
+:docker-log
+REM Let the user choose which container's logs to view.
+echo Choose a Docker container for logs:
+echo 1) Keycloak
+echo 2) Kong
+set /p choice="Enter choice [1-2]: "
+if "%choice%"=="1" (
+  docker-compose -f docker-compose.keycloak.yml logs -f
+  goto :eof
+) else if "%choice%"=="2" (
+  docker-compose -f docker-compose.kong.yml logs -f
+  goto :eof
+) else (
+  call :colorEcho %YELLOW% "Invalid choice. Exiting docker-log." %RESET%
+  goto :eof
+)
+
+REM ------------------------------------------------------------------
 :keycloak
-echo Starting Keycloak...
+REM Build and start the Keycloak Docker container.
+echo Starting Keycloak container...
 docker-compose -f docker-compose.keycloak.yml down
 docker-compose -f docker-compose.keycloak.yml up --build -d
 goto :eof
 
+REM ------------------------------------------------------------------
 :kong
-echo Starting Kong...
+REM Build and start the Kong Docker container.
+echo Starting Kong container...
 docker-compose -f docker-compose.kong.yml down
 docker-compose -f docker-compose.kong.yml up --build -d
 goto :eof
 
+REM ------------------------------------------------------------------
 :build
+REM Create the bin directory (if it doesn't exist) and build the Go binary.
 echo Building application...
 if not exist bin mkdir bin
 go build -o bin/app main.go
 goto :eof
 
+REM ------------------------------------------------------------------
 :clean
+REM Remove the bin directory and invoke go clean.
 echo Cleaning build files...
 if exist bin rmdir /s /q bin
 go clean
 goto :eof
 
+REM ------------------------------------------------------------------
 :colorEcho
-<nul set /p ".=%1" > nul
-echo %2
-<nul set /p ".=%3" > nul
+REM A helper function to output colored text.
+REM Parameters:
+REM   %1 - Color code for the first part of the text.
+REM   %2 - The text to display with the first color.
+REM   %3 - (Optional) Additional color code or text.
+<nul set /p "dummy=%~1" >nul
+echo %~2
+<nul set /p "dummy=%~3" >nul
 goto :eof
