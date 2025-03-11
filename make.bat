@@ -27,6 +27,7 @@ call :colorEcho %GREEN% "  run           - Run the Go application with interacti
 call :colorEcho %GREEN% "  run-direct    - Run directly with ENV variable"
 call :colorEcho %GREEN% "  build         - Build the Go application"
 call :colorEcho %GREEN% "  docker-start  - Start Docker containers"
+call :colorEcho %GREEN% "  docker        - Choose a Docker command (Keycloak or Kong)"
 call :colorEcho %GREEN% "  clean         - Remove binary files"
 call :colorEcho %GREEN% "  help          - Show this help message"
 echo.
@@ -73,6 +74,32 @@ call :colorEcho %GREEN% "Running application in Docker environment..." %RESET%
 echo.
 docker-compose down --remove-orphans
 docker-compose up --build -d
+goto :eof
+
+:docker
+echo Choose a Docker command:
+echo 1) Keycloak
+echo 2) Kong
+set /p choice="Enter choice [1-2]: "
+if "%choice%"=="1" (
+  goto :keycloak
+) else if "%choice%"=="2" (
+  goto :kong
+) else (
+  call :colorEcho %YELLOW% "Invalid choice" %RESET%
+  goto :eof
+)
+
+:keycloak
+echo Starting Keycloak...
+docker-compose -f docker-compose.keycloak.yml down
+docker-compose -f docker-compose.keycloak.yml up --build -d
+goto :eof
+
+:kong
+echo Starting Kong...
+docker-compose -f docker-compose.kong.yml down
+docker-compose -f docker-compose.kong.yml up --build -d
 goto :eof
 
 :build
