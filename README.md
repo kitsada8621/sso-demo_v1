@@ -51,9 +51,9 @@ networks:
 ## Run the project 🚀✅
 1. Start keycloak
 ```sh
-docker-compose -f docker-compose.keycloak.yml up -d
+make docker-up  # Choose option 1 to start Keycloak
 ```
 2. Start API
 ```sh
-make run
+make run # Choose option 1 to start Service
 ```
