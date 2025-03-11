@@ -23,12 +23,12 @@ echo Usage:
 call :colorEcho %YELLOW% "  make.bat" %RESET% " " %GREEN% "^<target^>" %RESET%
 echo.
 echo Targets:
-call :colorEcho %GREEN% "  run" %RESET% "           - Run the Go application with interactive environment selection"
-call :colorEcho %GREEN% "  run-direct" %RESET% "    - Run directly with ENV variable"
-call :colorEcho %GREEN% "  build" %RESET% "         - Build the Go application"
-call :colorEcho %GREEN% "  docker-start" %RESET% "  - Start Docker containers"
-call :colorEcho %GREEN% "  clean" %RESET% "         - Remove binary files"
-call :colorEcho %GREEN% "  help" %RESET% "          - Show this help message"
+call :colorEcho %GREEN% "  run           - Run the Go application with interactive environment selection"
+call :colorEcho %GREEN% "  run-direct    - Run directly with ENV variable"
+call :colorEcho %GREEN% "  build         - Build the Go application"
+call :colorEcho %GREEN% "  docker-start  - Start Docker containers"
+call :colorEcho %GREEN% "  clean         - Remove binary files"
+call :colorEcho %GREEN% "  help          - Show this help message"
 echo.
 goto :eof
 
@@ -43,25 +43,36 @@ call :colorEcho %YELLOW% "Please select environment:" %RESET%
 echo.
 echo 1) Development
 echo 2) Production
-set /p choice="Enter choice [1-2]: "
+echo 3) Docker
+set /p choice="Enter choice [1-3]: "
 
 if "%choice%"=="1" (
-    set ENV=development
-    goto :run-direct
+  set ENV=development
+  goto :run-direct
 ) else if "%choice%"=="2" (
-    set ENV=production
-    goto :run-direct
+  set ENV=production
+  goto :run-direct
+) else if "%choice%"=="3" (
+  set ENV=docker
+  goto :run-docker
 ) else (
-    call :colorEcho %YELLOW% "Invalid choice. Using default (development)" %RESET%
-    echo.
-    set ENV=development
-    goto :run-direct
+  call :colorEcho %YELLOW% "Invalid choice. Using default (development)" %RESET%
+  echo.
+  set ENV=development
+  goto :run-direct
 )
 
 :run-direct
 call :colorEcho %GREEN% "Running application in %ENV% environment..." %RESET%
 echo.
 go run ./cmd/api/main.go
+goto :eof
+
+:run-docker
+call :colorEcho %GREEN% "Running application in Docker environment..." %RESET%
+echo.
+docker-compose down --remove-orphans
+docker-compose up --build -d
 goto :eof
 
 :build
@@ -76,40 +87,8 @@ if exist bin rmdir /s /q bin
 go clean
 goto :eof
 
-:default
-goto :help
-
 :colorEcho
-for /f "tokens=1,2 delims=#" %%a in ('"prompt #$H#$E# & echo on & for %%b in (1) do rem"') do (
-  set "DEL=%%a"
-)
-
-set "param=%~1"
-set "string=%~2"
-<nul set /p ".=%DEL%" > "%~2"
-findstr /v /a:%param% /R "^$" "%~2" nul
-del "%~2" > nul 2>&1
-
-if "%~3"=="" goto :eof
-<nul set /p "=%~3"
-
-set "param=%~4"
-set "string=%~5"
-if not "%param%"=="" (
-  <nul set /p ".=%DEL%" > "%~5"
-  findstr /v /a:%param% /R "^$" "%~5" nul
-  del "%~5" > nul 2>&1
-)
-
-if "%~6"=="" goto :eof
-<nul set /p "=%~6"
-
-set "param=%~7"
-set "string=%~8"
-if not "%param%"=="" (
-  <nul set /p ".=%DEL%" > "%~8"
-  findstr /v /a:%param% /R "^$" "%~8" nul
-  del "%~8" > nul 2>&1
-)
-
+<nul set /p ".=%1" > nul
+echo %2
+<nul set /p ".=%3" > nul
 goto :eof
