@@ -5,6 +5,8 @@ REM ------------------------------------------------------------------
 REM make.bat - A helper script for managing the Go application and Docker containers.
 REM Default environment is set to development if not specified.
 REM ------------------------------------------------------------------
+
+REM Set default environment if not specified
 if "%ENV%"=="" set ENV=development
 
 REM Color codes for Windows console output
@@ -30,10 +32,9 @@ call :colorEcho %YELLOW% "  make.bat" %RESET% " " %GREEN% "<target>" %RESET%
 echo.
 echo Available Targets:
 call :colorEcho %GREEN% "  run           - Run the Go application with interactive environment selection" 
-call :colorEcho %GREEN% "  run-direct    - Run the Go application using the ENV variable directly" 
 call :colorEcho %GREEN% "  build         - Build the Go application binary" 
-call :colorEcho %GREEN% "  docker-start  - Start all Docker containers (builds and runs)" 
 call :colorEcho %GREEN% "  docker-up     - Start a specific Docker container (Keycloak or Kong)" 
+call :colorEcho %GREEN% "  docker-restart- Restart a specific Docker container (Keycloak or Kong)"
 call :colorEcho %GREEN% "  docker-down   - Stop a specific Docker container (Keycloak or Kong)" 
 call :colorEcho %GREEN% "  docker-log    - View logs for a specific Docker container (Keycloak or Kong)" 
 call :colorEcho %GREEN% "  clean         - Remove build files and clean environment" 
@@ -105,6 +106,24 @@ if "%choice%"=="1" (
   goto :kong
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-up." %RESET%
+  goto :eof
+)
+
+REM ------------------------------------------------------------------
+:docker-restart
+REM Let the user choose which Docker container to restart.
+echo Restarting Docker container:
+echo 1) Keycloak
+echo 2) Kong
+set /p choice="Enter choice [1-2]: "
+if "%choice%"=="1" (
+  goto :keycloak
+) else if "%choice%"=="2" (
+  docker-compose -f docker-compose.kong.yml down
+  docker-compose -f docker-compose.kong.yml up -d
+  goto :kong
+) else (
+  call :colorEcho %YELLOW% "Invalid choice. Exiting docker-restart." %RESET%
   goto :eof
 )
 

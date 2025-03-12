@@ -3,82 +3,49 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"time"
 
+	"github.com/eec/sso/internal/infrastructure/server"
 	"github.com/joho/godotenv"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
 	// Load the configuration based on environment
 	env := getEnv("ENV", "development")
 
-	var err error
-	if env == "development" {
-		err = godotenv.Load(".env.development")
-	} else {
-		err = godotenv.Load()
-	}
-
-	if err != nil {
+	// Load environment variables from the appropriate .env file
+	if err := loadEnvFile(env); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	e := echo.New()
-
-	// Enhanced Security Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(middleware.SecureWithConfig(middleware.SecureConfig{
-		XSSProtection:         "1; mode=block",
-		ContentTypeNosniff:    "nosniff",
-		XFrameOptions:         "SAMEORIGIN",
-		HSTSMaxAge:            31536000, // 1 year
-		HSTSExcludeSubdomains: false,
-		HSTSPreloadEnabled:    true,
-		ContentSecurityPolicy: "default-src 'self'",
-		ReferrerPolicy:        "strict-origin-when-cross-origin",
-	}))
-
-	// Add CORS middleware with secure defaults
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodDelete},
-		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
-		AllowCredentials: true,
-		MaxAge:           int(12 * time.Hour.Seconds()),
-	}))
-
-	// Add rate limiting
-	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20))) // 20 requests per second
-
-	// Routes
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
-
-	// Start server
+	// Create and start the server
+	e := server.CreateServer()
 	e.Logger.Fatal(e.Start(getPort()))
-	fmt.Printf("Server started on port %s\n", getPort())
-	fmt.Printf("Environment: %s", os.Getenv("ENV"))
 }
 
 // getEnv returns the value of an environment variable or a default value
 func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
-	return value
+	return defaultValue
 }
 
-func getPort() string {
-	port := os.Getenv("PORT")
-	if port == "" {
-		return ":1323"
+// loadEnvFile loads the appropriate .env file based on the environment
+func loadEnvFile(env string) error {
+	var envFile string
+	if env == "development" {
+		envFile = ".env.development"
+	} else {
+		envFile = ".env"
 	}
-	return fmt.Sprintf(":%s", port)
+	return godotenv.Load(envFile)
+}
+
+// getPort returns the port to start the server on, defaulting to ":1323"
+func getPort() string {
+	if port, exists := os.LookupEnv("PORT"); exists {
+		return fmt.Sprintf(":%s", port)
+	}
+	return ":1323"
 }
