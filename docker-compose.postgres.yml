@@ -1,5 +1,3 @@
-version: '3.8' # Specify the version of the Docker Compose file format
-
 services:
   postgres:
     image: postgres:17.4-alpine3.20 # Use the PostgreSQL image
@@ -12,19 +10,11 @@ services:
       POSTGRES_DB: keycloak_db # Set the default PostgreSQL database
     restart: unless-stopped  # Restart the container unless stopped
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Use a named volume for PostgreSQL data
+      - ./postgres/data:/var/lib/postgresql/data  # Use a named volume for PostgreSQL data
     networks:
-      - keycloak-net # Connect the container to the keycloak-net network
-
-volumes:
-  postgres_data: # Define a named volume for PostgreSQL data
-    driver: local
-    driver_opts:
-      type: none
-      device: /D:/POC/sso-keycloak/postgres/data
-      o: bind
+      - default # Connect the container to the keycloak-net network
 
 networks:
-  keycloak-net:
+  default:
     external: true
-    name: keycloak-net # Use an existing external network named keycloak-net
+    name: sso-net

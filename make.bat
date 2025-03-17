@@ -33,10 +33,10 @@ echo.
 echo Available Targets:
 call :colorEcho %GREEN% "  run           - Run the Go application with interactive environment selection" 
 call :colorEcho %GREEN% "  build         - Build the Go application binary" 
-call :colorEcho %GREEN% "  docker-up     - Start a specific Docker container (Keycloak, Kong, or Kafka)" 
-call :colorEcho %GREEN% "  docker-restart- Restart a specific Docker container (Keycloak, Kong, or Kafka)"
-call :colorEcho %GREEN% "  docker-down   - Stop a specific Docker container (Keycloak, Kong, or Kafka)" 
-call :colorEcho %GREEN% "  docker-log    - View logs for a specific Docker container (Keycloak, Kong, or Kafka)" 
+call :colorEcho %GREEN% "  docker-up     - Start a specific Docker container (Keycloak, Kong, Kafka, or Postgres)" 
+call :colorEcho %GREEN% "  docker-restart- Restart a specific Docker container (Keycloak, Kong, Kafka, or Postgres)"
+call :colorEcho %GREEN% "  docker-down   - Stop a specific Docker container (Keycloak, Kong, Kafka, or Postgres)" 
+call :colorEcho %GREEN% "  docker-log    - View logs for a specific Docker container (Keycloak, Kong, Kafka, or Postgres)" 
 call :colorEcho %GREEN% "  clean         - Remove build files and clean environment" 
 call :colorEcho %GREEN% "  help          - Display this help message" 
 echo.
@@ -100,13 +100,16 @@ echo Choose a Docker container to start:
 echo 1) Keycloak
 echo 2) Kong
 echo 3) Kafka
-set /p choice="Enter choice [1-3]: "
+echo 4) Postgres
+set /p choice="Enter choice [1-4]: "
 if "%choice%"=="1" (
   goto :keycloak
 ) else if "%choice%"=="2" (
   goto :kong
 ) else if "%choice%"=="3" (
   goto :kafka
+) else if "%choice%"=="4" (
+  goto :postgres
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-up." %RESET%
   goto :eof
@@ -119,17 +122,16 @@ echo Restarting Docker container:
 echo 1) Keycloak
 echo 2) Kong
 echo 3) Kafka
-set /p choice="Enter choice [1-3]: "
+echo 4) Postgres
+set /p choice="Enter choice [1-4]: "
 if "%choice%"=="1" (
-  goto :keycloak
+  goto :keycloak-restart
 ) else if "%choice%"=="2" (
-  docker-compose -f docker-compose.kong.yml down
-  docker-compose -f docker-compose.kong.yml up -d
-  goto :kong
+  goto :kong-restart
 ) else if "%choice%"=="3" (
-  docker-compose -f docker-compose.kafka.yml down
-  docker-compose -f docker-compose.kafka.yml up -d
-  goto :kafka
+  goto :kafka-restart
+) else if "%choice%"=="4" (
+  goto :postgres-restart
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-restart." %RESET%
   goto :eof
@@ -142,7 +144,8 @@ echo Stopping Docker container:
 echo 1) Keycloak
 echo 2) Kong
 echo 3) Kafka
-set /p choice="Enter choice [1-3]: "
+echo 4) Postgres
+set /p choice="Enter choice [1-4]: "
 if "%choice%"=="1" (
   docker-compose -f docker-compose.keycloak.yml down
   REM Uncomment the line below to remove the Keycloak image if needed:
@@ -153,6 +156,9 @@ if "%choice%"=="1" (
   goto :eof
 ) else if "%choice%"=="3" (
   docker-compose -f docker-compose.kafka.yml down
+  goto :eof
+) else if "%choice%"=="4" (
+  docker-compose -f docker-compose.postgres.yml down
   goto :eof
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-down." %RESET%
@@ -166,7 +172,8 @@ echo Choose a Docker container for logs:
 echo 1) Keycloak
 echo 2) Kong
 echo 3) Kafka
-set /p choice="Enter choice [1-3]: "
+echo 4) Postgres
+set /p choice="Enter choice [1-4]: "
 if "%choice%"=="1" (
   docker-compose -f docker-compose.keycloak.yml logs -f
   goto :eof
@@ -176,10 +183,21 @@ if "%choice%"=="1" (
 ) else if "%choice%"=="3" (
   docker-compose -f docker-compose.kafka.yml logs -f
   goto :eof
+) else if "%choice%"=="4" (
+  docker-compose -f docker-compose.postgres.yml logs -f
+  goto :eof
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-log." %RESET%
   goto :eof
 )
+
+REM ------------------------------------------------------------------
+:postgres
+REM Build and start the Postgres Docker container.
+echo Starting Postgres container...
+docker-compose -f docker-compose.postgres.yml down
+docker-compose -f docker-compose.postgres.yml up --build -d
+goto :eof
 
 REM ------------------------------------------------------------------
 :keycloak
@@ -231,4 +249,32 @@ REM   %3 - (Optional) Additional color code or text.
 <nul set /p "dummy=%~1" >nul
 echo %~2
 <nul set /p "dummy=%~3" >nul
+goto :eof
+
+REM ------------------------------------------------------------------
+:keycloak-restart
+REM Restart the Keycloak Docker container.
+docker-compose -f docker-compose.keycloak.yml down
+docker-compose -f docker-compose.keycloak.yml up -d
+goto :eof
+
+REM ------------------------------------------------------------------
+:kong-restart
+REM Restart the Kong Docker container.
+docker-compose -f docker-compose.kong.yml down
+docker-compose -f docker-compose.kong.yml up -d
+goto :eof
+
+REM ------------------------------------------------------------------
+:kafka-restart
+REM Restart the Kafka Docker container.
+docker-compose -f docker-compose.kafka.yml down
+docker-compose -f docker-compose.kafka.yml up -d
+goto :eof
+
+REM ------------------------------------------------------------------
+:postgres-restart
+REM Restart the Postgres Docker container.
+docker-compose -f docker-compose.postgres.yml down
+docker-compose -f docker-compose.postgres.yml up -d
 goto :eof

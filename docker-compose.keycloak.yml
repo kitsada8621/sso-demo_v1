@@ -5,10 +5,10 @@ services:
     container_name: keycloak
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres_db:5432/eec_keycloak_db
-      KC_DB_USERNAME: aofdevx
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: P@ssw0rd
-      KEYCLOAK_ADMIN: aofdevx
+      KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: P@ssw0rd
       KC_HOSTNAME: localhost
     ports:
@@ -20,4 +20,4 @@ services:
 networks:
   default:
     external: true
-    name: default_network
+    name: sso-net

@@ -18,6 +18,10 @@ services:
     restart: always  # Always restart the container if it stops
     volumes:
       - /kafka/data:/var/lib/kafka/data  # Mount the host directory for Kafka data
+    networks:
+      - default
 
-# Ensure the host directory /kafka/data exists and has the correct permissions
-# Consider using Docker secrets or environment files for sensitive information
+networks:
+  default:
+    external: true
+    name: sso-net
