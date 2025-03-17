@@ -1,0 +1,30 @@
+version: '3.8' # Specify the version of the Docker Compose file format
+
+services:
+  postgres:
+    image: postgres:17.4-alpine3.20 # Use the PostgreSQL image
+    container_name: postgres  # Name the container
+    ports:
+      - "5432:5432"  # Expose port 5432 for PostgreSQL
+    environment:
+      POSTGRES_USER: postgres # Set the default PostgreSQL user
+      POSTGRES_PASSWORD: P@ssw0rd  # Set the default PostgreSQL password
+      POSTGRES_DB: keycloak_db # Set the default PostgreSQL database
+    restart: unless-stopped  # Restart the container unless stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Use a named volume for PostgreSQL data
+    networks:
+      - keycloak-net # Connect the container to the keycloak-net network
+
+volumes:
+  postgres_data: # Define a named volume for PostgreSQL data
+    driver: local
+    driver_opts:
+      type: none
+      device: /D:/POC/sso-keycloak/postgres/data
+      o: bind
+
+networks:
+  keycloak-net:
+    external: true
+    name: keycloak-net # Use an existing external network named keycloak-net

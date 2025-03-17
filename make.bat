@@ -7,7 +7,7 @@ REM Default environment is set to development if not specified.
 REM ------------------------------------------------------------------
 
 REM Set default environment if not specified
-if "%ENV%"=="" set ENV=development
+if "%ENV%"=="" set "ENV=development"
 
 REM Color codes for Windows console output
 set "GREEN=92"
@@ -20,7 +20,7 @@ if "%~1"=="" goto :help
 
 REM Attempt to jump to the specified command label.
 REM If the label does not exist, fall through to help.
-goto :%~1
+goto :%~1 2>nul
 if ERRORLEVEL 1 goto :help
 
 REM ------------------------------------------------------------------
@@ -33,10 +33,10 @@ echo.
 echo Available Targets:
 call :colorEcho %GREEN% "  run           - Run the Go application with interactive environment selection" 
 call :colorEcho %GREEN% "  build         - Build the Go application binary" 
-call :colorEcho %GREEN% "  docker-up     - Start a specific Docker container (Keycloak or Kong)" 
-call :colorEcho %GREEN% "  docker-restart- Restart a specific Docker container (Keycloak or Kong)"
-call :colorEcho %GREEN% "  docker-down   - Stop a specific Docker container (Keycloak or Kong)" 
-call :colorEcho %GREEN% "  docker-log    - View logs for a specific Docker container (Keycloak or Kong)" 
+call :colorEcho %GREEN% "  docker-up     - Start a specific Docker container (Keycloak, Kong, or Kafka)" 
+call :colorEcho %GREEN% "  docker-restart- Restart a specific Docker container (Keycloak, Kong, or Kafka)"
+call :colorEcho %GREEN% "  docker-down   - Stop a specific Docker container (Keycloak, Kong, or Kafka)" 
+call :colorEcho %GREEN% "  docker-log    - View logs for a specific Docker container (Keycloak, Kong, or Kafka)" 
 call :colorEcho %GREEN% "  clean         - Remove build files and clean environment" 
 call :colorEcho %GREEN% "  help          - Display this help message" 
 echo.
@@ -99,11 +99,14 @@ REM Let the user choose which Docker container to start.
 echo Choose a Docker container to start:
 echo 1) Keycloak
 echo 2) Kong
-set /p choice="Enter choice [1-2]: "
+echo 3) Kafka
+set /p choice="Enter choice [1-3]: "
 if "%choice%"=="1" (
   goto :keycloak
 ) else if "%choice%"=="2" (
   goto :kong
+) else if "%choice%"=="3" (
+  goto :kafka
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-up." %RESET%
   goto :eof
@@ -115,13 +118,18 @@ REM Let the user choose which Docker container to restart.
 echo Restarting Docker container:
 echo 1) Keycloak
 echo 2) Kong
-set /p choice="Enter choice [1-2]: "
+echo 3) Kafka
+set /p choice="Enter choice [1-3]: "
 if "%choice%"=="1" (
   goto :keycloak
 ) else if "%choice%"=="2" (
   docker-compose -f docker-compose.kong.yml down
   docker-compose -f docker-compose.kong.yml up -d
   goto :kong
+) else if "%choice%"=="3" (
+  docker-compose -f docker-compose.kafka.yml down
+  docker-compose -f docker-compose.kafka.yml up -d
+  goto :kafka
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-restart." %RESET%
   goto :eof
@@ -133,7 +141,8 @@ REM Let the user choose which Docker container to stop.
 echo Stopping Docker container:
 echo 1) Keycloak
 echo 2) Kong
-set /p choice="Enter choice [1-2]: "
+echo 3) Kafka
+set /p choice="Enter choice [1-3]: "
 if "%choice%"=="1" (
   docker-compose -f docker-compose.keycloak.yml down
   REM Uncomment the line below to remove the Keycloak image if needed:
@@ -141,6 +150,9 @@ if "%choice%"=="1" (
   goto :eof
 ) else if "%choice%"=="2" (
   docker-compose -f docker-compose.kong.yml down
+  goto :eof
+) else if "%choice%"=="3" (
+  docker-compose -f docker-compose.kafka.yml down
   goto :eof
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-down." %RESET%
@@ -153,12 +165,16 @@ REM Let the user choose which container's logs to view.
 echo Choose a Docker container for logs:
 echo 1) Keycloak
 echo 2) Kong
-set /p choice="Enter choice [1-2]: "
+echo 3) Kafka
+set /p choice="Enter choice [1-3]: "
 if "%choice%"=="1" (
   docker-compose -f docker-compose.keycloak.yml logs -f
   goto :eof
 ) else if "%choice%"=="2" (
   docker-compose -f docker-compose.kong.yml logs -f
+  goto :eof
+) else if "%choice%"=="3" (
+  docker-compose -f docker-compose.kafka.yml logs -f
   goto :eof
 ) else (
   call :colorEcho %YELLOW% "Invalid choice. Exiting docker-log." %RESET%
@@ -179,6 +195,14 @@ REM Build and start the Kong Docker container.
 echo Starting Kong container...
 docker-compose -f docker-compose.kong.yml down
 docker-compose -f docker-compose.kong.yml up --build -d
+goto :eof
+
+REM ------------------------------------------------------------------
+:kafka
+REM Build and start the Kafka Docker container.
+echo Starting Kafka container...
+docker-compose -f docker-compose.kafka.yml down
+docker-compose -f docker-compose.kafka.yml up --build -d
 goto :eof
 
 REM ------------------------------------------------------------------

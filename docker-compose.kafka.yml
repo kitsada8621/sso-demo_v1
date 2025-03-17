@@ -1,0 +1,23 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0  # Use the Confluent Kafka image
+    container_name: kafka  # Name the container
+    ports:
+      - "9092:9092"  # Expose port 9092 for Kafka broker
+      - "9093:9093"  # Expose port 9093 for Kafka controller
+    environment:
+      KAFKA_NODE_ID: 1  # Unique ID for the Kafka node
+      KAFKA_PROCESS_ROLES: "controller,broker"  # Define roles for the node
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"  # Define quorum voters
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"  # Define listeners
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"  # Advertised listeners for clients
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"  # Listener names for the controller
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"  # Directory for Kafka logs
+      KAFKA_CLUSTER_ID: "8tOeAA5HR2GpCkgWzv0TYw"  # Unique ID for the Kafka cluster
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Replication factor for the offsets topic
+    restart: always  # Always restart the container if it stops
+    volumes:
+      - /kafka/data:/var/lib/kafka/data  # Mount the host directory for Kafka data
+
+# Ensure the host directory /kafka/data exists and has the correct permissions
+# Consider using Docker secrets or environment files for sensitive information
