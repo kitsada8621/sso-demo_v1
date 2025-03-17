@@ -1,3 +1,7 @@
 .env
 .env.development
 Please select environment
+.vscode
+.vscode/*
+kafka/data/*
+postgres/data/*
